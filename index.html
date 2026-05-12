@@ -25,7 +25,6 @@
             overflow: hidden; 
             -webkit-user-select: none; user-select: none;
             width: 100vw; height: 100vh;
-            /* Support for multi-touch gestures */
             touch-action: none; 
         }
 
@@ -136,13 +135,12 @@
         .btn { padding: 15px 35px; border: none; border-radius: 50px; cursor: pointer; font-weight: bold; font-family: 'Fredoka'; font-size: 18px; background: linear-gradient(45deg, var(--accent-glow), #4e00b3); color: white; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 5px 20px rgba(112,0,255,0.4); transition: 0.3s; touch-action: manipulation; }
         .btn:hover { transform: scale(1.05); filter: brightness(1.2); }
         
-        /* ARMORY MODAL SCROLLING LOGIC */
         #settings-modal { 
             display: none; position: fixed; z-index: 10000; inset: 0; 
             background: rgba(0,0,0,0.95); 
-            overflow-y: auto; /* Enable scrolling on the modal overlay */
+            overflow-y: auto;
             -webkit-overflow-scrolling: touch; 
-            touch-action: auto; /* Allow touch scrolling here */
+            touch-action: auto; 
         }
         .modal-content { 
             background: #1a1a2e; color: #fff; margin: 20px auto; padding: 30px; 
@@ -163,7 +161,7 @@
         .opt-mini-preview { width: 40px; height: 40px; border: 1px solid #444; border-radius: 4px; background-size: contain; background-position: center; background-repeat: no-repeat; background-color: #000; cursor: pointer; flex-shrink: 0; }
         .winner-char-display { width: 250px; height: 250px; margin-top: 20px; background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 20px var(--accent-glow)); }
 
-        input[type="text"] { touch-action: auto; } /* Allow typing/scrolling inside inputs */
+        input[type="text"] { touch-action: auto; } 
     </style>
 </head>
 <body>
@@ -329,7 +327,11 @@
             document.getElementById('avatar-1').style.backgroundImage = `url(s${playerSelection[1]}.gif)`;
             applyMirroring(0, document.getElementById('wrapper-0')); 
             applyMirroring(1, document.getElementById('wrapper-1'));
-            updateHP(0, 0); updateHP(1, 0);
+            
+            // Explicitly set initial UI HP to 100
+            document.getElementById('hp-0').style.width = '100%';
+            document.getElementById('hp-1').style.width = '100%';
+            
             loadUniversalQuestion();
             if(gameMode === 'turn') { currentTurn = 0; updateTurnUI(); }
             else { 
@@ -357,9 +359,8 @@
         function loadUniversalQuestion() {
             if (isGameOver) return;
             if (currentQuestionIndex >= activeQuestionPool.length) {
-                const winnerIdx = gameData[0].hp >= gameData[1].hp ? 0 : 1;
-                endGame(winnerIdx);
-                return;
+                currentQuestionIndex = 0;
+                activeQuestionPool.sort(() => Math.random() - 0.5);
             }
             const qObj = activeQuestionPool[currentQuestionIndex];
             [0, 1].forEach(pIdx => {
@@ -438,12 +439,19 @@
         }
 
         function updateHP(pIdx, change) {
+            // Update data logic
             gameData[pIdx].hp = Math.max(0, Math.min(100, gameData[pIdx].hp + change));
-            document.getElementById(`hp-${pIdx}`).style.width = gameData[pIdx].hp + '%';
+            
+            // Visual logic: ensure health bar reflects exact value
+            const healthBar = document.getElementById(`hp-${pIdx}`);
+            healthBar.style.width = gameData[pIdx].hp + '%';
+
+            // Win condition logic: Check immediately if HP is 0
             if (gameData[pIdx].hp <= 0 && !isGameOver) {
                 isGameOver = true;
                 const winnerIdx = (pIdx === 0 ? 1 : 0);
-                setTimeout(() => { endGame(winnerIdx); }, 1500);
+                // Delay slightly to let damage animation finish
+                setTimeout(() => { endGame(winnerIdx); }, 1000);
             }
         }
 
